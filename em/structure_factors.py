@@ -6,12 +6,12 @@
 #     A copy of the CCP-EM licence can be obtained by writing to the
 #     CCP-EM Secretary, RAL Laboratory, Harwell, OX11 0FA, UK.
 #
-
-import clipper
-import numpy
-import numpy as np
 import os
+
+import numpy as np
 import matplotlib.pyplot as plt
+
+from clipper_python import _clipper as clipper
 
 
 class ClipperMTZ(object):
@@ -24,7 +24,7 @@ class ClipperMTZ(object):
             assert os.path.exists(self.mtz_in_path)
         self.spacegroup = None
         self.cell = None
-        self.column_data = {}
+        self.column_data = { }
 
     def import_column_data(self, column_label, get_resolution=True):
         if self.mtz_in_path is not None:
@@ -39,12 +39,12 @@ class ClipperMTZ(object):
             self.mtz.import_hkl_data(f_phi, '/*/*/' + column_label)
             self.mtz.close_read()
             # Convert to numpy
-            f_phi_np = numpy.zeros((f_phi.data_size() * len(f_phi)),
-                                      numpy.float)
+            f_phi_np = np.zeros((f_phi.data_size() * len(f_phi)),
+                                      np.float)
             f_phi.getDataNumpy(f_phi_np)
             # Reshape and transpose
-            f_phi_np = numpy.reshape(f_phi_np, (-1, 2))
-            f_phi_np = numpy.transpose(f_phi_np)
+            f_phi_np = np.reshape(f_phi_np, (-1, 2))
+            f_phi_np = np.transpose(f_phi_np)
             # Convert to rec array to store col names
             names = [n for n in f_phi.data_names().split()]
             f_phi_np = np.core.records.fromarrays(
@@ -55,9 +55,8 @@ class ClipperMTZ(object):
             self.column_data[column_label] = f_phi_np
             # Get resolution column
             if get_resolution:
-                res_np = numpy.zeros(f_phi_np.shape[0])
+                res_np = np.zeros(f_phi_np.shape[0])
                 for n in xrange(f_phi_np.shape[0]):
                     r = self.hkl_info.invresolsq(n)
                     res_np[n] = r
                 self.column_data['resolution_1/Ang^2'] = res_np
-

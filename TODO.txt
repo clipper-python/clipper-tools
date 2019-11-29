@@ -1,0 +1,15 @@
+# William Rochira
+- Rewrite 'utils' module so that residue functions just take MiniMol residue as input
+- Rotamer library interpolation and serialisation; compare to Coot's analysis
+- Check ILE Chi3 atoms - ending in CD as per CCP14? Or CD1 as per PDB
+- Replace fragile 'incomplete sidechain' system
+- Replace fragile 'no context' system?
+- Check selenomethionine (MSE) and (selenocysteine) (SEC) behaviours
+- Add clash-detection etc.
+- Molprobity HTML parser and comparer
+- Automated unit tests
+- Eventually migrate to Python3...
+	-- Remove (object) from class declarations
+	-- 'print' to 'print()'
+	-- string.strip()
+	-- def next() --> def __next__()

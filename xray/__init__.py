@@ -1,8 +1,3 @@
-import sys
-import os
-
-sys.path.append(os.path.dirname(__file__))
-import map_coefficients
-import mr_from_em
-import patterson
-import structure_factors
+from . import mr_from_em
+from . import patterson
+from . import structure_factors

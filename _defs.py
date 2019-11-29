@@ -1,0 +1,2 @@
+SC_INCOMPLETE_STRING = 'Incomplete sidechain'
+NO_CONTEXT_MESSAGE = 'NOCONTEXT'
