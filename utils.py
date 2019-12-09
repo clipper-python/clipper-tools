@@ -98,9 +98,9 @@ def torsion(xyz1, xyz2, xyz3, xyz4, range_positive=True):
     return angle
 
 # (MiniMol) residue functions
-def code_type(code):
+def code_type(mmol_residue):
     try:
-        return next(category for category, group in THREE_LETTER_CODES.items() if code in group)
+        return next(category for category, group in THREE_LETTER_CODES.items() if mmol_residue.type().trim() in group)
     except:
         return None
 
@@ -119,23 +119,23 @@ def get_backbone_atoms(mmol_residue):
         c = None
     return n, ca, c
 
-def check_backbone_geometry(backbone_atoms):
-    n, ca, c = backbone_atoms
+def check_backbone_geometry(mmol_residue):
+    n, ca, c = get_backbone_atoms(mmol_residue)
     return distance(n.coord, ca.coord) < 1.8 and distance(ca.coord, c.coord) < 1.8
 
-def calculate_chis(code, all_atoms):
+def calculate_chis(mmol_residue):
     chis = [ ]
     for i in range(5):
         chi_atoms = [ ]
-        has_chi = any(code in residues for residues in list(CHI_ATOMS[i].values()))
+        has_chi = any(mmol_residue.type().trim() in residues for residues in list(CHI_ATOMS[i].values()))
         if not has_chi:
             chis.append(None)
             continue
-        required_atom_names = next(atoms for atoms, residues in CHI_ATOMS[i].items() if code in residues)
+        required_atom_names = next(atoms for atoms, residues in CHI_ATOMS[i].items() if mmol_residue.type().trim() in residues)
         missing_atom_names = [ ]
         for required_atom_name in required_atom_names:
             found = False
-            for atom in all_atoms:
+            for atom in mmol_residue:
                 atom_name = atom.id().trim().replace(' ', '')
                 if atom_name in (required_atom_name, required_atom_name + ':A'):
                     chi_atoms.append(atom)
@@ -156,19 +156,23 @@ def analyse_b_factors(mmol_residue):
     b_stdev = (sum([ (x - b_average) ** 2 for x in residue_b_factors ]) / len(residue_b_factors)) ** 0.5
     return b_max, b_average, b_stdev
 
-def check_is_aa(code_type, backbone_atoms_are_correct, backbone_geometry_is_correct, strict=False):
+def check_is_aa(mmol_residue, strict=False):
     allowed_types = (0,) if strict else (0, 1)
-    if code_type in allowed_types and \
-       backbone_atoms_are_correct and \
-       backbone_geometry_is_correct:
+    if code_type(mmol_residue) in allowed_types and \
+       None not in get_backbone_atoms(mmol_residue) and \
+       check_backbone_geometry(mmol_residue):
         return True
     return False
 
-def calculate_ramachandran_probability(code, phi, psi):
+def calculate_rotamer_probability(mmol_residue, chis=None):
+    if chis is None:
+        chis = calculate_chis(mmol_residue)
+    return rotamer.get_probability(mmol_residue.type().trim(), chis)
+
+def calculate_ramachandran_probability(mmol_residue, phi, psi):
     if phi is None or psi is None:
         return None
-    rama_function = clipper.Ramachandran(clipper.Ramachandran.Gly5) if code == 'GLY' else clipper.Ramachandran(clipper.Ramachandran.Pro5) if code == 'PRO' else clipper.Ramachandran(clipper.Ramachandran.NonGlyPro5)
+    rama_function = clipper.Ramachandran(clipper.Ramachandran.Gly5) if mmol_residue.type().trim() == 'GLY' else \
+                    clipper.Ramachandran(clipper.Ramachandran.Pro5) if mmol_residue.type().trim() == 'PRO' else \
+                    clipper.Ramachandran(clipper.Ramachandran.NonGlyPro5)
     return rama_function.probability(phi, psi)
-
-def calculate_rotamer_probability(code, chis):
-    return rotamer.get_probability(code, chis)
