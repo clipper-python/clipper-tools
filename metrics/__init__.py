@@ -1,6 +1,13 @@
 """
 Copyright 2019 William Rochira at the University of York
 Developed at York Structural Biology Laboratory - Cowtan group
+
+- Simplifies calculation of per-residue metrics from a Clipper-Python MiniMol type
+- Introduces types: MetricsModel, MetricsChain, MetricsResidue;
+- MetricsModel must be initialised with a Clipper-Python MiniMol model type
+- MetricsChain must be initialised with a Clipper-Python MiniMol polymer (chain) type
+- MetricsResidue must be initialised with a Clipper-Python MiniMol monomer (residue) type, but also accepts arguments that contextualise it within the chain, allowing for further metric calculations, such as mainchain torsion angles and Ramachandran Plot probability
+- When initialised by a MetricsChain instance, each MetricsResidue object is automatically created with all the context arguments specified
 """
 import math
 
@@ -55,10 +62,10 @@ class MetricsChain(object):
         raise StopIteration
 
 
-'''
 class MetricsResidue(object):
     def __init__(self, mmol_residue, index_in_chain=None, previous=None, next=None):
         #self.mmol_residue = mmol_residue
+        self.initialised_with_context = index_in_chain is not None
         self.index_in_chain = index_in_chain
         self.previous = previous
         self.next = next
@@ -79,11 +86,11 @@ class MetricsResidue(object):
         self.chis = utils.calculate_chis(mmol_residue)
         self.is_sidechain_complete = _defs.SC_INCOMPLETE_STRING not in self.chis
         self.ramachandran_probability = utils.calculate_ramachandran_probability(mmol_residue, self.phi, self.psi)
-        self.rotamer_probability = utils.calculate_rotamer_probability(mmol_residue, chis=self.chis)
+        self.rotamer_probability = utils.calculate_rotamer_probability(mmol_residue, chis=self.chis) if self.is_sidechain_complete else None
+        self.rotamer_score = utils.calculate_rotamer_score(mmol_residue, chis=self.chis) if self.is_sidechain_complete else None
         self.max_b_factor, self.avg_b_factor, self.std_b_factor = utils.analyse_b_factors(mmol_residue)
+
 '''
-
-
 class MetricsResidue(object):
     def __init__(self, mmol_residue, index_in_chain=None, previous=None, next=None):
         #self.mmol_residue = mmol_residue
@@ -97,7 +104,8 @@ class MetricsResidue(object):
         self.is_aa = utils.check_is_aa(mmol_residue)
         self.chis = utils.calculate_chis(mmol_residue)
         self.is_sidechain_complete = _defs.SC_INCOMPLETE_STRING not in self.chis
-        self.rotamer_probability = utils.calculate_rotamer_probability(mmol_residue, chis=self.chis)
+        self.rotamer_probability = utils.calculate_rotamer_probability(mmol_residue, chis=self.chis) if self.is_sidechain_complete else None
+        self.rotamer_score = utils.calculate_rotamer_score(mmol_residue, chis=self.chis) if self.is_sidechain_complete else None
         self.max_b_factor, self.avg_b_factor, self.std_b_factor = utils.analyse_b_factors(mmol_residue)
 
         if self.initialised_with_context:
@@ -120,3 +128,4 @@ class MetricsResidue(object):
             self.phi = _defs.NO_CONTEXT_MESSAGE
             self.psi = _defs.NO_CONTEXT_MESSAGE
             self.ramachandran_probability = _defs.NO_CONTEXT_MESSAGE
+'''

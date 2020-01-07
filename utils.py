@@ -81,7 +81,7 @@ def angle(xyz1, xyz2, xyz3):
     angle = math.acos(dot_product(v1, v2) / (magnitude(v1) * magnitude(v2)))
     return math.degrees(angle)
 
-def torsion(xyz1, xyz2, xyz3, xyz4, range_positive=True):
+def torsion(xyz1, xyz2, xyz3, xyz4, range_positive=False):
     b1 = subtract(xyz2, xyz1)
     b2 = subtract(xyz3, xyz2)
     b3 = subtract(xyz4, xyz3)
@@ -168,6 +168,11 @@ def calculate_rotamer_probability(mmol_residue, chis=None):
     if chis is None:
         chis = calculate_chis(mmol_residue)
     return rotamer.get_probability(mmol_residue.type().trim(), chis)
+
+def calculate_rotamer_score(mmol_residue, chis=None):
+    if chis is None:
+        chis = calculate_chis(mmol_residue)
+    return rotamer.get_cv_score(mmol_residue.type().trim(), chis)
 
 def calculate_ramachandran_probability(mmol_residue, phi, psi):
     if phi is None or psi is None:
