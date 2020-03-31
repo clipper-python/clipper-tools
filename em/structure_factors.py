@@ -11,7 +11,15 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-from clipper_python import _clipper as clipper
+try:
+    import clipper
+    CLIPPER_MODE = 0
+except ImportError:
+    try:
+        from clipper_python import _clipper as clipper
+        CLIPPER_MODE = 1
+    except ImportError:
+        raise Exception('failed to import Clipper-Python')
 
 
 class ClipperMTZ(object):

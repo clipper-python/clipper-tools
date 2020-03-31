@@ -11,7 +11,16 @@ import time
 import numpy
 import getpass
 from lxml import etree
-from clipper_python import _clipper as clipper
+
+try:
+    import clipper
+    CLIPPER_MODE = 0
+except ImportError:
+    try:
+        from clipper_python import _clipper as clipper
+        CLIPPER_MODE = 1
+    except ImportError:
+        raise Exception('failed to import Clipper-Python')
 
 from .. import _callbacks
 from ..io.maps import read_xmap

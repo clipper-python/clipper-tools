@@ -2,12 +2,10 @@
 Copyright 2019 William Rochira at the University of York
 Developed at York Structural Biology Laboratory - Cowtan group
 
- - Loads serialised rotamer library to calculate probability of
-   a particular sidechain conformation from a (semi) continuous
-   probability distribution
- - Included rotamer library data originally from the Richardson
-   lab (https://github.com/rlabduke/reference_data)
+Included rotamer library data originally from the Richardson
+lab (https://github.com/rlabduke/reference_data)
 """
+
 import os
 import pickle
 
