@@ -142,6 +142,8 @@ class MetricsResidue(object):
             self.psi = None
         self.chis = utils.calculate_chis(mmol_residue)
         self.is_sidechain_complete = _defs.SC_INCOMPLETE_STRING not in self.chis
+        self.ramachandran_allowed = utils.get_ramachandran_allowed(mmol_residue, self.phi, self.psi)
+        self.ramachandran_favored = utils.get_ramachandran_favored(mmol_residue, self.phi, self.psi)
         self.ramachandran_score = utils.calculate_ramachandran_score(mmol_residue, self.phi, self.psi)
         self.rotamer_score = utils.calculate_rotamer_score(mmol_residue, chis=self.chis) if self.is_sidechain_complete else None
         self.max_b_factor, self.avg_b_factor, self.std_b_factor = utils.analyse_b_factors(mmol_residue)

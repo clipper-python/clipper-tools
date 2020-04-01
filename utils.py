@@ -325,6 +325,22 @@ def calculate_rotamer_score(mmol_residue, chis=None):
         chis = calculate_chis(mmol_residue)
     return rotamer.get_cv_score(mmol_residue.type().trim(), chis)
 
+def get_ramachandran_allowed(mmol_residue, phi, psi):
+    if phi is None or psi is None:
+        return None
+    rama_function = clipper.Ramachandran(clipper.Ramachandran.Gly5) if mmol_residue.type().trim() == 'GLY' else \
+                    clipper.Ramachandran(clipper.Ramachandran.Pro5) if mmol_residue.type().trim() == 'PRO' else \
+                    clipper.Ramachandran(clipper.Ramachandran.NonGlyPro5)
+    return rama_function.allowed(phi, psi)
+
+def get_ramachandran_favored(mmol_residue, phi, psi):
+    if phi is None or psi is None:
+        return None
+    rama_function = clipper.Ramachandran(clipper.Ramachandran.Gly5) if mmol_residue.type().trim() == 'GLY' else \
+                    clipper.Ramachandran(clipper.Ramachandran.Pro5) if mmol_residue.type().trim() == 'PRO' else \
+                    clipper.Ramachandran(clipper.Ramachandran.NonGlyPro5)
+    return rama_function.favored(phi, psi)
+
 def calculate_ramachandran_score(mmol_residue, phi, psi):
     if phi is None or psi is None:
         return None
