@@ -8,9 +8,6 @@ A pure Python module containing simple tools for crystallography and single-part
 ...
 
 ## metrics
-- Simplifies calculation of per-residue metrics from a Clipper-Python MiniMol type
-
-## rotamer
 ...
 
 ## utils

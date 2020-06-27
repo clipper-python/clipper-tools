@@ -1,6 +1,6 @@
 """
-Copyright 2019 William Rochira at the University of York
-Developed at York Structural Biology Laboratory - Cowtan group
+Copyright 2020 William Rochira at the University of York
+Developed at York Structural Biology Laboratory
 """
 
 import math
@@ -15,8 +15,7 @@ except ImportError:
     except ImportError:
         raise Exception('failed to import Clipper-Python')
 
-from . import _defs
-from . import rotamer
+from .metrics import _defs, rotamer
 
 
 THREE_LETTER_CODES = { 0 : [ 'ALA', 'GLY', 'VAL', 'LEU', 'ILE', 'PRO', 'PHE', 'TYR', 'TRP', 'SER',
@@ -69,10 +68,17 @@ CHI_ATOMS = [ { ('N', 'CA', 'CB', 'CG') : ('ARG', 'ASN', 'ASP', 'GLN', 'GLU', 'H
                 ('CG', 'CD', 'CE', 'NZ') : ('LYS') },
               { ('CD', 'NE', 'CZ', 'NH1') : ('ARG') } ]
 
+ATOMIC_NUMBERS = { 'H': 1, 'HE': 2, 'LI': 3, 'BE': 4, 'B': 5, 'C': 6, 'N': 7, 'O': 8, 'F': 9, 'NE': 10, 'NA': 11, 'MG': 12, 'AL': 13, 'SI': 14, 'P': 15, 'S': 16, 'CL': 17, 'AR': 18, 'K': 19, 'CA': 20, 'SC': 21, 'TI': 22, 'V': 23, 'CR': 24, 'MN': 25, 'FE': 26, 'CO': 27, 'NI': 28, 'CU': 29, 'ZN': 30, 'GA': 31, 'GE': 32, 'AS': 33, 'SE': 34, 'BR': 35, 'KR': 36, 'RB': 37, 'SR': 38, 'Y': 39, 'ZR': 40, 'NB': 41, 'MO': 42, 'TC': 43, 'RU': 44, 'RH': 45, 'PD': 46, 'AG': 47, 'CD': 48, 'IN': 49, 'SN': 50, 'SB': 51, 'TE': 52, 'I': 53, 'XE': 54, 'CS': 55, 'BA': 56, 'LA': 57, 'CE': 58, 'PR': 59, 'ND': 60, 'PM': 61, 'SM': 62, 'EU': 63, 'GD': 64, 'TB': 65, 'DY': 66, 'HO': 67, 'ER': 68, 'TM': 69, 'YB': 70, 'LU': 71, 'HF': 72, 'TA': 73, 'W': 74, 'RE': 75, 'OS': 76, 'IR': 77, 'PT': 78, 'AU': 79, 'HG': 80, 'TL': 81, 'PB': 82, 'BI': 83, 'PO': 84, 'AT': 85, 'RN': 86, 'FR': 87, 'RA': 88, 'AC': 89, 'TH': 90, 'PA': 91, 'U': 92, 'NP': 93, 'PU': 94, 'AM': 95, 'CM': 96, 'BK': 97, 'CF': 98, 'ES': 99, 'FM': 100, 'MD': 101, 'NO': 102, 'LR': 103, 'RF': 104, 'DB': 105, 'SG': 106, 'BH': 107, 'HS': 108, 'MT': 109, 'DS': 110, 'RG': 111, 'CN': 112, 'NH': 113, 'FL': 114, 'MC': 115, 'LV': 116, 'TS': 117, 'OG': 118 }
+
+MC_ATOM_NAMES = set(['N', 'CA' 'C', 'O', 'CB' ])
+
 
 # General calculations
 def mean(values):
-    return float(sum(values)) / len(values)
+    try:
+        return float(sum(values)) / len(values)
+    except:
+        return None
 
 def median(values):
     values = sorted(values)
@@ -83,6 +89,14 @@ def median(values):
     if n % 2 == 1:
         return values[i]
     return mean(values[i-1:i+1])
+
+# Approximate CDF for a Gaussian distribution
+# Legacy code, replaced with SciPy's norm.cdf
+def _phi_approx(z_score):
+    if z_score <= 0:
+        return exp(-0.5 * z_score**2) / (1.2533141373 * (-z_score + sqrt(z_score**2 + 2.546479089470)))
+    else:
+        return 1.0 - exp(-0.5 * z_score**2) / (1.2533141373 * (z_score + sqrt(z_score**2 + 2.546479089470)))
 
 # Matrix operations
 def _avg_coord(*xyzs):
@@ -184,16 +198,16 @@ def needleman_wunsch(seq1, seq2, match_award=1, mismatch_penalty=-1, gap_penalty
 
     score = [ [ 0 for _ in range(n+1) ] for _ in range(m+1) ]
 
-    for i in range(0, m + 1):
+    for i in range(0, m+1):
         score[i][0] = gap_penalty * i
-    for j in range(0, n + 1):
+    for j in range(0, n+1):
         score[0][j] = gap_penalty * j
 
-    for i in range(1, m + 1):
-        for j in range(1, n + 1):
-            match = score[i - 1][j - 1] + (match_award if seq1[j-1] == seq2[i-1] else gap_penalty if '-' in (seq1[j-1], seq2[i-1]) else mismatch_penalty)
-            delete = score[i - 1][j] + gap_penalty
-            insert = score[i][j - 1] + gap_penalty
+    for i in range(1, m+1):
+        for j in range(1, n+1):
+            match = score[i-1][j-1] + (match_award if seq1[j-1] == seq2[i-1] else gap_penalty if '-' in (seq1[j-1], seq2[i-1]) else mismatch_penalty)
+            delete = score[i-1][j] + gap_penalty
+            insert = score[i][j-1] + gap_penalty
             score[i][j] = max(match, delete, insert)
 
     alignment1, alignment2 = '', ''
@@ -297,15 +311,36 @@ def calculate_chis(mmol_residue):
         chis.append(torsion(xyzs[0], xyzs[1], xyzs[2], xyzs[3]))
     return tuple(chis)
 
-def analyse_b_factors(mmol_residue):
-    if CLIPPER_MODE == 0:
-        residue_b_factors = [ clipper.Util_u2b(atom.u_iso()) for atom in mmol_residue ]
-    elif CLIPPER_MODE == 1:
-        residue_b_factors = [ clipper.Util_u2b(atom.u_iso) for atom in mmol_residue ]
+def analyse_b_factors(mmol_residue, is_aa=None, backbone_atoms=None):
+    if is_aa is None:
+        is_aa = check_is_aa(mmol_residue)
+    if backbone_atoms is None:
+        backbone_atoms = get_backbone_atoms(mmol_residue)
+    if is_aa:
+        if CLIPPER_MODE == 0:
+            backbone_atom_ids = set([ str(atom.id()).strip() for atom in backbone_atoms ])
+        elif CLIPPER_MODE == 1:
+            backbone_atom_ids = set([ str(atom.id).strip() for atom in backbone_atoms ])
+    residue_b_factors, mc_b_factors, sc_b_factors = [ ], [ ], [ ]
+    for atom in mmol_residue:
+        if CLIPPER_MODE == 0:
+            atom_id = str(atom.id()).strip()
+            bf = clipper.Util_u2b(atom.u_iso())
+        elif CLIPPER_MODE == 1:
+            atom_id = str(atom.id).strip()
+            bf = clipper.Util_u2b(atom.u_iso)
+        residue_b_factors.append(bf)
+        if is_aa:
+            if atom_id in backbone_atom_ids:
+                mc_b_factors.append(bf)
+            else:
+                sc_b_factors.append(bf)
     b_max = max(residue_b_factors)
-    b_average = mean(residue_b_factors)
-    b_stdev = (sum([ (x - b_average) ** 2 for x in residue_b_factors ]) / len(residue_b_factors)) ** 0.5
-    return b_max, b_average, b_stdev
+    b_avg = mean(residue_b_factors)
+    b_stdev = (sum([ (x - b_avg) ** 2 for x in residue_b_factors ]) / len(residue_b_factors)) ** 0.5
+    mc_b_avg = mean(mc_b_factors) if is_aa else None
+    sc_b_avg = mean(sc_b_factors) if is_aa else None
+    return b_max, b_avg, b_stdev, mc_b_avg, sc_b_avg
 
 def check_is_aa(mmol_residue, strict=False):
     allowed_types = (0,) if strict else (0, 1)
@@ -325,20 +360,27 @@ def calculate_rotamer_score(mmol_residue, chis=None):
         chis = calculate_chis(mmol_residue)
     return rotamer.get_cv_score(mmol_residue.type().trim(), chis)
 
-def get_ramachandran_allowed(mmol_residue, phi, psi):
+def get_rotamer_classification(mmol_residue, chis=None):
+    if chis is None:
+        chis = calculate_chis(mmol_residue)
+    return rotamer.get_classification(mmol_residue.type().trim(), chis)
+
+def get_ramachandran_allowed(mmol_residue, phi, psi, thresholds=(0.002, 0.02)):
     if phi is None or psi is None:
         return None
     rama_function = clipper.Ramachandran(clipper.Ramachandran.Gly5) if mmol_residue.type().trim() == 'GLY' else \
                     clipper.Ramachandran(clipper.Ramachandran.Pro5) if mmol_residue.type().trim() == 'PRO' else \
                     clipper.Ramachandran(clipper.Ramachandran.NonGlyPro5)
+    rama_function.set_thresholds(*thresholds)
     return rama_function.allowed(phi, psi)
 
-def get_ramachandran_favored(mmol_residue, phi, psi):
+def get_ramachandran_favored(mmol_residue, phi, psi, thresholds=(0.002, 0.02)):
     if phi is None or psi is None:
         return None
     rama_function = clipper.Ramachandran(clipper.Ramachandran.Gly5) if mmol_residue.type().trim() == 'GLY' else \
                     clipper.Ramachandran(clipper.Ramachandran.Pro5) if mmol_residue.type().trim() == 'PRO' else \
                     clipper.Ramachandran(clipper.Ramachandran.NonGlyPro5)
+    rama_function.set_thresholds(*thresholds)
     return rama_function.favored(phi, psi)
 
 def calculate_ramachandran_score(mmol_residue, phi, psi):
