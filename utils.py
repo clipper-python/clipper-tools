@@ -15,8 +15,6 @@ except ImportError:
     except ImportError:
         raise Exception('failed to import Clipper-Python')
 
-from .metrics import _defs, rotamer
-
 
 THREE_LETTER_CODES = { 0 : [ 'ALA', 'GLY', 'VAL', 'LEU', 'ILE', 'PRO', 'PHE', 'TYR', 'TRP', 'SER',
                              'THR', 'CYS', 'MET', 'ASN', 'GLN', 'LYS', 'ARG', 'HIS', 'ASP', 'GLU' ],
@@ -105,6 +103,12 @@ def _avg_coord(*xyzs):
     y = sum([ xyz[1] for xyz in xyzs ]) / num_args
     z = sum([ xyz[2] for xyz in xyzs ]) / num_args
     return (x, y, z)
+
+def product(x):
+    result = 1
+    for xi in x:
+        result *= xi
+    return result
 
 def dot_product(xyz1, xyz2):
     return xyz1[0] * xyz2[0] + xyz1[1] * xyz2[1] + xyz1[2] * xyz2[2]
@@ -283,6 +287,7 @@ def check_backbone_geometry(mmol_residue):
     return dist_n_ca < 1.8 and dist_ca_c < 1.8
 
 def calculate_chis(mmol_residue):
+    from .metrics import _defs
     chis = [ ]
     for i in range(5):
         chi_atoms = [ ]
@@ -351,16 +356,19 @@ def check_is_aa(mmol_residue, strict=False):
     return False
 
 def calculate_rotamer_probability(mmol_residue, chis=None):
+    from .metrics import rotamer
     if chis is None:
         chis = calculate_chis(mmol_residue)
     return rotamer.get_probability(mmol_residue.type().trim(), chis)
 
 def calculate_rotamer_score(mmol_residue, chis=None):
+    from .metrics import rotamer
     if chis is None:
         chis = calculate_chis(mmol_residue)
     return rotamer.get_cv_score(mmol_residue.type().trim(), chis)
 
 def get_rotamer_classification(mmol_residue, chis=None):
+    from .metrics import rotamer
     if chis is None:
         chis = calculate_chis(mmol_residue)
     return rotamer.get_classification(mmol_residue.type().trim(), chis)

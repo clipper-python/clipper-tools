@@ -9,13 +9,31 @@ Included rotamer data originally from the Richardson lab
 import os
 import pickle
 
-import numpy as np
-
 from .. import _defs
+from ...utils import product
 
 
 ROTAMER_LIBRARY_DATA = None
 ROTAMER_CENTRAL_VALUES = None
+
+
+# Unpack each byte in a byte array as four 2-bit integers
+# Unsurprisingly, NumPy is much faster than pure Python for this
+def unpack_bytes(in_bytes):
+    masks = bytearray([ 0b11000000, 0b00110000, 0b00001100, 0b00000011 ])
+    shifts = bytearray([ 6, 4, 2, 0 ])
+    try:
+        # NumPy mode
+        import numpy as np
+        masked = np.array(in_bytes).reshape(-1,1) & np.array(masks)
+        shifted = masked >> np.array(shifts)
+        unpacked = shifted.flatten().astype('int8')
+    except ImportError:
+        # Python-only mode
+        masked = [ [ in_byte & mask_byte for mask_byte in masks ] for in_byte in in_bytes ]
+        shifted = [ [ masked_byte >> shift_byte for masked_byte, shift_byte in zip(masked_bytes, shifts) ] for masked_bytes in masked ]
+        unpacked = [ a for b in shifted for a in b ]
+    return unpacked
 
 
 def _load_library():
@@ -27,17 +45,11 @@ def _load_library():
         return
     with gzip.open(os.path.join(os.path.dirname(__file__), 'data', 'library.gz'), 'rb') as infile:
         dim_offsets, dim_bin_ranges, dim_bin_widths, dim_num_options, compressed_byte_arrays = pickle.load(infile)
-    classification_bytes = { }
+    classifications = { }
     for code, compressed in compressed_byte_arrays.items():
         compressed = bytearray(compressed) # Need to cast from str in Python 2
-        decompressed = bytearray()
-        for combo_byte in compressed:
-            b0 = combo_byte // 16
-            b1 = combo_byte - 16 * b0
-            decompressed.append(b0)
-            decompressed.append(b1)
-        classification_bytes[code] = decompressed
-    ROTAMER_LIBRARY_DATA = (dim_offsets, dim_bin_ranges, dim_bin_widths, dim_num_options, classification_bytes)
+        classifications[code] = unpack_bytes(compressed)
+    ROTAMER_LIBRARY_DATA = (dim_offsets, dim_bin_ranges, dim_bin_widths, dim_num_options, classifications)
 
 
 def _load_central_values():
@@ -80,7 +92,7 @@ def get_classification(code, chis):
         _load_library()
     if ROTAMER_LIBRARY_DATA is None:
         return None
-    dim_offsets, dim_bin_ranges, dim_bin_widths, dim_num_options, classification_bytes = ROTAMER_LIBRARY_DATA
+    dim_offsets, dim_bin_ranges, dim_bin_widths, dim_num_options, classifications = ROTAMER_LIBRARY_DATA
     if code not in dim_offsets.keys():
         return None
     closest_values = [ ]
@@ -99,8 +111,8 @@ def get_classification(code, chis):
     for dimension, chi in enumerate(closest_values):
         dim_offest = dim_offsets[code][dimension]
         dim_bin_width = dim_bin_widths[code][dimension]
-        index += int((chi - dim_offest) / dim_bin_width * np.product(dim_num_options[code][dimension+1:]))
-    return classification_bytes[code][index]
+        index += int((chi - dim_offest) / dim_bin_width * product(dim_num_options[code][dimension+1:]))
+    return classifications[code][index]
 
 
 def get_cv_score(code, chis):
