@@ -19,7 +19,7 @@ except ImportError:
         from clipper_python import _clipper as clipper
         CLIPPER_MODE = 1
     except ImportError:
-        raise Exception('failed to import Clipper-Python')
+        raise ImportError('failed to import Clipper-Python')
 
 from .. import _callbacks
 from ..io.structure_factors import read_from_mtz

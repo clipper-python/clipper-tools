@@ -13,7 +13,7 @@ except ImportError:
         from clipper_python import _clipper as clipper
         CLIPPER_MODE = 1
     except ImportError:
-        raise Exception('failed to import Clipper-Python')
+        raise ImportError('failed to import Clipper-Python')
 
 
 THREE_LETTER_CODES = { 0 : [ 'ALA', 'GLY', 'VAL', 'LEU', 'ILE', 'PRO', 'PHE', 'TYR', 'TRP', 'SER',
@@ -89,15 +89,18 @@ def median(values):
     return mean(values[i-1:i+1])
 
 # Approximate CDF for a Gaussian distribution
-# Legacy code, replaced with SciPy's norm.cdf
-def _phi_approx(z_score):
-    if z_score <= 0:
-        return exp(-0.5 * z_score**2) / (1.2533141373 * (-z_score + sqrt(z_score**2 + 2.546479089470)))
-    else:
-        return 1.0 - exp(-0.5 * z_score**2) / (1.2533141373 * (z_score + sqrt(z_score**2 + 2.546479089470)))
+def norm_cdf(z_score):
+    try:
+        from scipy.stats import norm
+        return norm.cdf(z_score)
+    except ImportError:
+        if z_score <= 0:
+            return exp(-0.5 * z_score**2) / (1.2533141373 * (-z_score + sqrt(z_score**2 + 2.546479089470)))
+        else:
+            return 1.0 - exp(-0.5 * z_score**2) / (1.2533141373 * (z_score + sqrt(z_score**2 + 2.546479089470)))
 
 # Matrix operations
-def _avg_coord(*xyzs):
+def avg_coord(*xyzs):
     num_args = len(xyzs)
     x = sum([ xyz[0] for xyz in xyzs ]) / num_args
     y = sum([ xyz[1] for xyz in xyzs ]) / num_args
@@ -354,24 +357,6 @@ def check_is_aa(mmol_residue, strict=False):
        check_backbone_geometry(mmol_residue):
         return True
     return False
-
-def calculate_rotamer_probability(mmol_residue, chis=None):
-    from .metrics import rotamer
-    if chis is None:
-        chis = calculate_chis(mmol_residue)
-    return rotamer.get_probability(mmol_residue.type().trim(), chis)
-
-def calculate_rotamer_score(mmol_residue, chis=None):
-    from .metrics import rotamer
-    if chis is None:
-        chis = calculate_chis(mmol_residue)
-    return rotamer.get_cv_score(mmol_residue.type().trim(), chis)
-
-def get_rotamer_classification(mmol_residue, chis=None):
-    from .metrics import rotamer
-    if chis is None:
-        chis = calculate_chis(mmol_residue)
-    return rotamer.get_classification(mmol_residue.type().trim(), chis)
 
 def get_ramachandran_allowed(mmol_residue, phi, psi, thresholds=(0.002, 0.02)):
     if phi is None or psi is None:
