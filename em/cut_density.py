@@ -20,7 +20,7 @@ except ImportError:
         from clipper_python import _clipper as clipper
         CLIPPER_MODE = 1
     except ImportError:
-        raise ImportError('failed to import Clipper-Python')
+        raise ImportError('failed to import Clipper-Python. If CCP4 is installed, make sure you run this script using ccp4-python')
 
 from .. import _callbacks
 from ..io.maps import read_xmap
